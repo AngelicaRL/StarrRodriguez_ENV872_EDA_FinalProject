@@ -1,0 +1,146 @@
+---
+title: "MP Analysis Iniciatives PDET"
+author: "Angelica"
+date: "2025-03-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+install.packages("tidyverse")
+install.packages("here")
+install.packages("lubridate")
+install.packages("cowplot")
+install.packages("agricolae")
+install.packages("ggplot2")
+install.packages("dplyr")
+install.packages ("tidyr")
+install.packages ("stats")
+
+library("tidyverse")
+library("here")
+library("lubridate")
+library("cowplot")
+library("agricolae")
+library("ggplot2")
+library("dplyr")
+library("tidyr")
+library("stats")
+
+
+setwd("C:/Users/anrod/Documents/DUKE/4 Spring 2025/MP - Analysis/DATA BASE/Desempeño Fiscal y municipal")
+
+colnames(IDF_2022_raw)
+
+# Rename columns for IDF_2020A
+IDF_2020A <- IDF_2020A %>%
+  rename(
+    #"Categorías" = "Categoría Ley 617",
+    #"Ciudad_capital" = "Capitales",
+    #"Endeudamiento (Total)" = "Endeudamiento Largo Plazo",
+    "Calificación Endeudamiento Total" = "Calificación Endeudamiento Largo Plazo"
+  )
+
+# Rename columns for IDF_2021A
+IDF_2021A <- IDF_2021A %>%
+  rename(
+    "Categorías" = "Categoría Ley 617",
+    "Ciudad_capital" = "Capitales",
+    "Endeudamiento (Total)" = "Endeudamiento Largo Plazo",
+    "Calificación Endeudamiento Total" = "Calificación Endeudamiento Largo Plazo"
+  )
+
+# Rename columns for IDF_2022_raw
+IDF_2022_raw <- IDF_2022_raw %>%
+  rename(
+    "Restultados Gestión" = "Gestión",
+    "Capacidad de Ejecución de Ingresos" = "Capacidad de programación y recaudo de ingresos",
+    "Capacidad de Ejecución de Inversión" = "Calificación Capacidad de Ejecución de Inversión",
+    "Calificación Resultados Gestión" = "Calificación Gestión"
+  )
+
+# Rename columns for IDF_2023
+IDF_2023 <- IDF_2023 %>%
+  rename(
+    "Restultados Gestión" = "Gestión",
+    "Capacidad de Ejecución de Inversión" = "Calificación Capacidad de Ejecución de Inversión",
+    "Calificación Resultados Gestión" = "Calificación Gestión"
+  )
+
+colnames(IDF_2023)
+colnames(IDF_2022_raw)
+colnames(IDF_2021A)
+colnames(IDF_2020A)
+
+# Standardize column names in IDF_2023
+IDF_2023 <- IDF_2023 %>%
+  rename(
+    "Codigo DANE" = "Código",
+    "Ciudad_capital" = "Ciudad capital"
+  )
+
+# Standardize column names in IDF_2022_raw
+IDF_2022_raw <- IDF_2022_raw %>%
+  rename(
+    "Codigo DANE" = "Codigo_DANE",
+    "Ciudad_capital" = "Ciudad capital",
+    "Calificación Capacidad de Ejecución de Inversión" = "Capacidad de Ejecución de Inversión *"
+  )
+
+# Standardize column names in IDF_2021A
+IDF_2021A <- IDF_2021A %>%
+  rename(
+    "Resultados Gestión" = "Restultados Gestión",
+    "Capacidad de programación y recaudo de ingresos" = "Capacidad de Ejecución de Ingresos",
+    "Calificación capacidad de programación y recaudo de Ingresos" = "Calificación Capacidad de Ejecución de Ingresos",
+    "Calificación Resultados Gestión" = "Calificación Gestión"
+  )
+
+# Standardize column names in IDF_2020A
+IDF_2020A <- IDF_2020A %>%
+  rename(
+    "Bonificación Esfuerzo Propio" = "Bonificación Esfuerzo Porpio",
+    "Resultados Gestión" = "Gestión",
+    "Capacidad de programación y recaudo de ingresos" = "Capacidad de Ejecución de Ingresos",
+    "Calificación capacidad de programación y recaudo de Ingresos" = "Calificación Capacidad de Ejecución de Ingresos",
+    "Calificación Resultados Gestión" = "Calificación Gestión"
+  )
+
+colnames(IDF_2023)
+colnames(IDF_2022_raw)
+colnames(IDF_2021A)
+colnames(IDF_2020A)
+
+# For IDF_2021A, swap the order using relocate
+IDF_2021A <- IDF_2021A %>%
+  relocate('Nuevo IDF (sin bonos)', .before = 'Nuevo IDF') 
+
+# For IDF_2020A, swap the order using relocate
+IDF_2020A <- IDF_2020A %>%
+  relocate('Nuevo IDF (sin bonos)', .before = 'Nuevo IDF') 
+colnames(IDF_2021A)
+colnames(IDF_2020A)
+
+
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
