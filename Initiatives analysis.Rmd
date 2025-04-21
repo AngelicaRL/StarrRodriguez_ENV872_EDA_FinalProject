@@ -7,15 +7,15 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-install.packages("tidyverse")
-install.packages("here")
-install.packages("lubridate")
-install.packages("cowplot")
-install.packages("agricolae")
-install.packages("ggplot2")
-install.packages("dplyr")
-install.packages ("tidyr")
-install.packages ("stats")
+#install.packages("tidyverse")
+#install.packages("here")
+#install.packages("lubridate")
+#install.packages("cowplot")
+#install.packages("agricolae")
+#install.packages("ggplot2")
+#install.packages("dplyr")
+#install.packages ("tidyr")
+#install.packages ("stats")
 
 library("tidyverse")
 library("here")
@@ -26,102 +26,99 @@ library("ggplot2")
 library("dplyr")
 library("tidyr")
 library("stats")
+library(readxl)
 
 
-setwd("C:/Users/anrod/Documents/DUKE/4 Spring 2025/MP - Analysis/DATA BASE/Desempeño Fiscal y municipal")
+setwd("/Users/christopherstarr/StarrRodriguez_ENV872_EDA_FinalProject")
 
-colnames(IDF_2022_raw)
+#Read in all the excel documents and give them clearere names
 
-# Rename columns for IDF_2020A
-IDF_2020A <- IDF_2020A %>%
+#2020
+IDF_2020_raw <- read_excel("IDF Indice de  Desempeño Fiscal/Anexos Desempeño Fiscal 2020_Nueva Metodología.xlsx", 
+    sheet = "Municipios 2020", skip = 6)
+View(IDF_2020_raw)
+
+#2021
+IDF_2021_raw <- read_excel("IDF Indice de  Desempeño Fiscal/IDF_2021_Nueva_Metodologia.xlsx", 
+    sheet = "Municipios 2021", skip = 6)
+View(IDF_2021_raw)
+
+#2022
+IDF_2022_raw <- read_excel("IDF Indice de  Desempeño Fiscal/Resultados IDF-Nueva Metodología 2022.xlsx", 
+    skip = 5)
+View(IDF_2022_raw)
+
+#2023
+IDF_2023_raw <- read_excel("IDF Indice de  Desempeño Fiscal/ResultadosIDF_Nueva_MetodologIa_2023_Act.xlsx", 
+    sheet = "Municipios 2023", skip = 6)
+View(IDF_2023_raw)
+
+# Standardize 2020 dataset
+IDF_2020_std <- IDF_2020_raw %>%
   rename(
-    #"Categorías" = "Categoría Ley 617",
-    #"Ciudad_capital" = "Capitales",
-    #"Endeudamiento (Total)" = "Endeudamiento Largo Plazo",
-    "Calificación Endeudamiento Total" = "Calificación Endeudamiento Largo Plazo"
-  )
-
-# Rename columns for IDF_2021A
-IDF_2021A <- IDF_2021A %>%
-  rename(
+    "Código" = "Codigo DANE",
     "Categorías" = "Categoría Ley 617",
-    "Ciudad_capital" = "Capitales",
+    "Ciudad capital" = "Capitales",
     "Endeudamiento (Total)" = "Endeudamiento Largo Plazo",
-    "Calificación Endeudamiento Total" = "Calificación Endeudamiento Largo Plazo"
-  )
-
-# Rename columns for IDF_2022_raw
-IDF_2022_raw <- IDF_2022_raw %>%
-  rename(
-    "Restultados Gestión" = "Gestión",
-    "Capacidad de Ejecución de Ingresos" = "Capacidad de programación y recaudo de ingresos",
-    "Capacidad de Ejecución de Inversión" = "Calificación Capacidad de Ejecución de Inversión",
-    "Calificación Resultados Gestión" = "Calificación Gestión"
-  )
-
-# Rename columns for IDF_2023
-IDF_2023 <- IDF_2023 %>%
-  rename(
-    "Restultados Gestión" = "Gestión",
-    "Capacidad de Ejecución de Inversión" = "Calificación Capacidad de Ejecución de Inversión",
-    "Calificación Resultados Gestión" = "Calificación Gestión"
-  )
-
-colnames(IDF_2023)
-colnames(IDF_2022_raw)
-colnames(IDF_2021A)
-colnames(IDF_2020A)
-
-# Standardize column names in IDF_2023
-IDF_2023 <- IDF_2023 %>%
-  rename(
-    "Codigo DANE" = "Código",
-    "Ciudad_capital" = "Ciudad capital"
-  )
-
-# Standardize column names in IDF_2022_raw
-IDF_2022_raw <- IDF_2022_raw %>%
-  rename(
-    "Codigo DANE" = "Codigo_DANE",
-    "Ciudad_capital" = "Ciudad capital",
-    "Calificación Capacidad de Ejecución de Inversión" = "Capacidad de Ejecución de Inversión *"
-  )
-
-# Standardize column names in IDF_2021A
-IDF_2021A <- IDF_2021A %>%
-  rename(
-    "Resultados Gestión" = "Restultados Gestión",
+    "Calificación Endeudamiento Total" = "Calificación Endeudamiento Largo Plazo",
     "Capacidad de programación y recaudo de ingresos" = "Capacidad de Ejecución de Ingresos",
     "Calificación capacidad de programación y recaudo de Ingresos" = "Calificación Capacidad de Ejecución de Ingresos",
-    "Calificación Resultados Gestión" = "Calificación Gestión"
+    "Bonificación Esfuerzo Propio" = "Bonificación Esfuerzo Porpio"
   )
 
-# Standardize column names in IDF_2020A
-IDF_2020A <- IDF_2020A %>%
+# Standardize 2021 dataset
+IDF_2021_std <- IDF_2021_raw %>%
   rename(
-    "Bonificación Esfuerzo Propio" = "Bonificación Esfuerzo Porpio",
-    "Resultados Gestión" = "Gestión",
+    "Código" = "Codigo DANE",
+    "Categorías" = "Categoría Ley 617",
+    "Ciudad capital" = "Capitales",
+    "Endeudamiento (Total)" = "Endeudamiento Largo Plazo",
+    "Calificación Endeudamiento Total" = "Calificación Endeudamiento Largo Plazo",
     "Capacidad de programación y recaudo de ingresos" = "Capacidad de Ejecución de Ingresos",
-    "Calificación capacidad de programación y recaudo de Ingresos" = "Calificación Capacidad de Ejecución de Ingresos",
-    "Calificación Resultados Gestión" = "Calificación Gestión"
+    "Calificación capacidad de programación y recaudo de Ingresos" = "Calificación Capacidad de Ejecución de Ingresos"
   )
 
-colnames(IDF_2023)
-colnames(IDF_2022_raw)
-colnames(IDF_2021A)
-colnames(IDF_2020A)
+# Standardize 2022 dataset
+IDF_2022_std <- IDF_2022_raw %>%
+  rename(
+    "Calificación Capacidad de Ejecución de Inversión" = "Capacidad de Ejecución de Inversión *", 
+    "Gestión" = "Resultados Gestión",
+    "Calificación Gestión" = "Calificación Resultados Gestión"
+  )
 
-# For IDF_2021A, swap the order using relocate
-IDF_2021A <- IDF_2021A %>%
-  relocate('Nuevo IDF (sin bonos)', .before = 'Nuevo IDF') 
+# Standardize 2023 dataset
+IDF_2023_std <- IDF_2023_raw %>%
+  rename(
+    "Gestión" = "Resultados Gestión",
+    "Calificación Gestión" = "Calificación Resultados Gestión"
+  )
 
-# For IDF_2020A, swap the order using relocate
-IDF_2020A <- IDF_2020A %>%
-  relocate('Nuevo IDF (sin bonos)', .before = 'Nuevo IDF') 
-colnames(IDF_2021A)
-colnames(IDF_2020A)
+# Function to add any missing standard columns and set them to NA
+add_missing_columns <- function(df) {
+  for (col in standard_columns) {
+    if (!col %in% names(df)) {
+      df[[col]] <- NA
+    }
+  }
+  return(df)
+}
 
+# Add any missing columns and reorder all datasets to match standard format
+IDF_2020_std <- IDF_2020_std %>%
+  add_missing_columns() %>%
+  select(all_of(standard_columns))
 
+IDF_2021_std <- IDF_2021_std %>%
+  add_missing_columns() %>%
+  select(all_of(standard_columns))
+
+IDF_2022_std <- IDF_2022_std %>%
+  add_missing_columns() %>%
+  select(all_of(standard_columns))
+
+IDF_2023_std <- IDF_2023_std %>%
+  add_missing_columns() %>%
+  select(all_of(standard_columns))
 
 ```
 
