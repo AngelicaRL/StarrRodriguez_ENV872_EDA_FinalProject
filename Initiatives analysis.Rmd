@@ -103,22 +103,6 @@ add_missing_columns <- function(df) {
   return(df)
 }
 
-# Add any missing columns and reorder all datasets to match standard format
-IDF_2020_std <- IDF_2020_std %>%
-  add_missing_columns() %>%
-  select(all_of(standard_columns))
-
-IDF_2021_std <- IDF_2021_std %>%
-  add_missing_columns() %>%
-  select(all_of(standard_columns))
-
-IDF_2022_std <- IDF_2022_std %>%
-  add_missing_columns() %>%
-  select(all_of(standard_columns))
-
-IDF_2023_std <- IDF_2023_std %>%
-  add_missing_columns() %>%
-  select(all_of(standard_columns))
 
 ```
 
