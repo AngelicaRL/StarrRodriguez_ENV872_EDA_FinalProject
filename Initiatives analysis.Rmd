@@ -120,13 +120,61 @@ IDF_2023_std <- IDF_2023_std %>%
   mutate(Year = 2023) %>%
   select(Year, everything())
 
+IDF_2020_std <- IDF_2020_std %>% select(-c("Código Departamento" , "Categoría Ruralidad","Cumplimiento conjunto Ley 617 de 2000" ))
+
+IDF_2021_std <- IDF_2021_std %>% select(-c("Código Departamento" ,"Cumplimiento conjunto Ley 617 de 2000" ))
+
+# Fix Ciudad capital in 2020 dataset (convert from text to numeric)
+IDF_2020_std <- IDF_2020_std %>%
+  mutate(`Ciudad capital` = ifelse(`Ciudad capital` == "si", 1, 0))
+
+# Fix Ciudad capital in 2021 dataset (convert from text to numeric)
+IDF_2021_std <- IDF_2021_std %>%
+  mutate(`Ciudad capital` = as.numeric(`Ciudad capital`))
+
+# Fix Ciudad capital in 2020 and 2021 datasets
+IDF_2020_std$`Ciudad capital` <- as.numeric(ifelse(IDF_2020_std$`Ciudad capital` == "si", 1, 0))
+IDF_2021_std$`Ciudad capital` <- as.numeric(IDF_2021_std$`Ciudad capital`)
+
+# Fix numeric columns in 2020 dataset
+IDF_2020_std$`Dependencia de las Transferencias` <- as.numeric(IDF_2020_std$`Dependencia de las Transferencias`)
+IDF_2020_std$`Relevancia FBK fijo` <- as.numeric(IDF_2020_std$`Relevancia FBK fijo`)
+IDF_2020_std$`Endeudamiento (Total)` <- as.numeric(IDF_2020_std$`Endeudamiento (Total)`)
+IDF_2020_std$`Ahorro Corriente` <- as.numeric(IDF_2020_std$`Ahorro Corriente`)
+IDF_2020_std$`Balance Primario` <- as.numeric(IDF_2020_std$`Balance Primario`)
+IDF_2020_std$`Capacidad de programación y recaudo de ingresos` <- as.numeric(IDF_2020_std$`Capacidad de programación y recaudo de ingresos`)
+IDF_2020_std$`Capacidad de Ejecución de Inversión` <- as.numeric(IDF_2020_std$`Capacidad de Ejecución de Inversión`)
+IDF_2020_std$`Nuevo IDF (sin bonos)` <- as.numeric(IDF_2020_std$`Nuevo IDF (sin bonos)`)
+IDF_2020_std$`Nuevo IDF` <- as.numeric(IDF_2020_std$`Nuevo IDF`)
+
+# Fix numeric columns in 2021 dataset
+IDF_2021_std$`Dependencia de las Transferencias` <- as.numeric(IDF_2021_std$`Dependencia de las Transferencias`)
+IDF_2021_std$`Relevancia FBK fijo` <- as.numeric(IDF_2021_std$`Relevancia FBK fijo`)
+IDF_2021_std$`Endeudamiento (Total)` <- as.numeric(IDF_2021_std$`Endeudamiento (Total)`)
+IDF_2021_std$`Ahorro Corriente` <- as.numeric(IDF_2021_std$`Ahorro Corriente`)
+IDF_2021_std$`Capacidad de Ejecución de Inversión` <- as.numeric(IDF_2021_std$`Capacidad de Ejecución de Inversión`)
+IDF_2021_std$`Nuevo IDF (sin bonos)` <- as.numeric(IDF_2021_std$`Nuevo IDF (sin bonos)`)
+IDF_2021_std$`Nuevo IDF` <- as.numeric(IDF_2021_std$`Nuevo IDF`)
+
+# Fix numeric columns in 2023 dataset
+IDF_2023_std$`Dependencia de las Transferencias` <- as.numeric(IDF_2023_std$`Dependencia de las Transferencias`)
+IDF_2023_std$`Relevancia FBK fijo` <- as.numeric(IDF_2023_std$`Relevancia FBK fijo`)
+IDF_2023_std$`Ahorro Corriente` <- as.numeric(IDF_2023_std$`Ahorro Corriente`)
+IDF_2023_std$`Balance Primario` <- as.numeric(IDF_2023_std$`Balance Primario`)
+IDF_2023_std$`Holgura` <- as.numeric(IDF_2023_std$`Holgura`)
+IDF_2023_std$`Capacidad de programación y recaudo de ingresos` <- as.numeric(IDF_2023_std$`Capacidad de programación y recaudo de ingresos`)
+IDF_2023_std$`Capacidad de Ejecución de Inversión` <- as.numeric(IDF_2023_std$`Capacidad de Ejecución de Inversión`)
+
+
+
 #Verify Column Names
 colnames(IDF_2020_std)
 colnames(IDF_2021_std)
 colnames(IDF_2022_std)
 colnames(IDF_2023_std)
 
-
+#Merge into one set for analysis
+IDF_combined <- bind_rows(IDF_2020_std, IDF_2021_std, IDF_2022_std, IDF_2023_std)
 
 ```
 
@@ -137,7 +185,30 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r cars}
-summary(cars)
+###Looking at the combined dataset
+summary(IDF_combined)
+
+# 1. Count total unique municipalities
+total_unique_municipios <- IDF_combined %>%
+  distinct(Municipio) %>%
+  nrow()
+
+# Display the count
+cat("Total Unique Municipalities:", total_unique_municipios, "\n\n")
+
+# 2. Count códigos per municipality
+codigos_per_municipio <- IDF_combined %>%
+  group_by(Municipio, Departamento) %>%
+  summarize(
+    Codigo_Count = n_distinct(Código, Year),
+    .groups = "drop"
+  ) %>%
+  arrange(Departamento, Municipio)
+
+# 3. Count Códigos per Departamento
+codigos_per_departamento <- table(IDF_combined$Departamento)
+sorted_departamentos <- sort(codigos_per_departamento, decreasing = TRUE)
+print(sorted_departamentos)  # Show all departments by código count
 ```
 
 ## Including Plots
