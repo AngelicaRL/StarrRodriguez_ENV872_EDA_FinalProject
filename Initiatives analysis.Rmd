@@ -31,6 +31,7 @@ library(readxl)
 
 setwd("/Users/christopherstarr/StarrRodriguez_ENV872_EDA_FinalProject")
 
+#Data Wrangling
 #Read in all the excel documents and give them clearere names
 
 #2020
@@ -93,15 +94,38 @@ IDF_2023_std <- IDF_2023_raw %>%
     "Calificación Gestión" = "Calificación Resultados Gestión"
   )
 
-# Function to add any missing standard columns and set them to NA
-add_missing_columns <- function(df) {
-  for (col in standard_columns) {
-    if (!col %in% names(df)) {
-      df[[col]] <- NA
-    }
-  }
-  return(df)
-}
+# For IDF_2021_std, swap the order using relocate
+IDF_2021_std <- IDF_2021_std %>%
+  relocate('Nuevo IDF (sin bonos)', .before = 'Nuevo IDF') 
+
+# For IDF_2020_std, swap the order using relocate
+IDF_2020_std <- IDF_2020_std %>%
+  relocate('Nuevo IDF (sin bonos)', .before = 'Nuevo IDF') 
+
+# Now add a year identifier column to each dataset
+IDF_2020_std <- IDF_2020_std %>%
+  mutate(Year = 2020) %>%
+  # Move Year column to the front for better visibility
+  select(Year, everything())
+
+IDF_2021_std <- IDF_2021_std %>%
+  mutate(Year = 2021) %>%
+  select(Year, everything())
+
+IDF_2022_std <- IDF_2022_std %>%
+  mutate(Year = 2022) %>%
+  select(Year, everything())
+
+IDF_2023_std <- IDF_2023_std %>%
+  mutate(Year = 2023) %>%
+  select(Year, everything())
+
+#Verify Column Names
+colnames(IDF_2020_std)
+colnames(IDF_2021_std)
+colnames(IDF_2022_std)
+colnames(IDF_2023_std)
+
 
 
 ```
