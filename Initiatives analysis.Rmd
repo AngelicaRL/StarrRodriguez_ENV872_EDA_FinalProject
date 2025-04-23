@@ -216,7 +216,39 @@ print(sorted_departamentos)  # Show all departments by código count
 You can also embed plots, for example:
 
 ```{r pressure, echo=FALSE}
-plot(pressure)
+# 2. Visualization: Scatterplot of IDF score by Category, colored by Department
+# For better visualization, we'll select the top departments by municipality count
+top_departments <- IDF_combined %>%
+  distinct(Municipio, Departamento) %>%
+  count(Departamento, sort = TRUE) %>%
+  head(10) %>%
+  pull(Departamento)
+
+# Create the scatterplot
+plot_data <- IDF_combined %>%
+  filter(Departamento %in% top_departments) %>%
+  # Use the most recent year for cleaner visualization
+  filter(Year == max(Year))
+
+# Create the plot
+idf_scatter <- ggplot(plot_data, aes(x = `Nuevo IDF`, y = Categorías, color = Departamento)) +
+  geom_jitter(alpha = 0.7, width = 0, height = 0.2) +
+  labs(
+    title = "IDF Scores by Municipality Category",
+    subtitle = paste("Top", length(top_departments), "Departments by Municipality Count"),
+    x = "Nuevo IDF Score",
+    y = "Municipality Category",
+    color = "Department"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    legend.text = element_text(size = 8)
+  ) +
+  guides(color = guide_legend(nrow = 2))
+
+# Display the plot
+print(idf_scatter)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
