@@ -16,6 +16,8 @@ editor_options:
   chunk_output_type: console
 ---
 
+#Github repository: https://github.com/AngelicaRL/StarrRodriguez_ENV872_EDA_FinalProject
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   echo = FALSE,         # Don't show code in final document
