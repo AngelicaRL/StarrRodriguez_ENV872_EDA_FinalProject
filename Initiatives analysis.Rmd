@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("dplyr")
 #install.packages ("tidyr")
 #install.packages ("stats")
+install.packages("geoBVE")
 
 library("tidyverse")
 library("here")
@@ -26,7 +27,7 @@ library("ggplot2")
 library("dplyr")
 library("tidyr")
 library("stats")
-library(readxl)
+library("readxl")
 
 
 setwd("/Users/christopherstarr/StarrRodriguez_ENV872_EDA_FinalProject")
@@ -165,8 +166,6 @@ IDF_2023_std$`Holgura` <- as.numeric(IDF_2023_std$`Holgura`)
 IDF_2023_std$`Capacidad de programación y recaudo de ingresos` <- as.numeric(IDF_2023_std$`Capacidad de programación y recaudo de ingresos`)
 IDF_2023_std$`Capacidad de Ejecución de Inversión` <- as.numeric(IDF_2023_std$`Capacidad de Ejecución de Inversión`)
 
-
-
 #Verify Column Names
 colnames(IDF_2020_std)
 colnames(IDF_2021_std)
@@ -175,6 +174,203 @@ colnames(IDF_2023_std)
 
 #Merge into one set for analysis
 IDF_combined <- bind_rows(IDF_2020_std, IDF_2021_std, IDF_2022_std, IDF_2023_std)
+
+### add in information about which municipios are PDET (getting special post war support)
+
+# Read PDET municipalities Excel file
+MunicipiosPDET <- read_excel("MunicipiosPDET.xlsx")
+View(MunicipiosPDET)
+
+# Create simple reference table with Municipio column and PDET=1
+pdet_reference <- data.frame(
+  Municipio = MunicipiosPDET$Municipio,
+  PDET = 1
+)
+
+# adding in alternative spelling for PDET municipalities
+pdet_reference <- rbind(
+  pdet_reference,
+  data.frame(
+    Municipio = c(
+      # Variants with accent differences
+      "CAJIBIO",                      # Original: CAJIBÍO
+      "JAMBALO",                      # Original: JAMBALÓ
+      "PATIA (EL BORDO)",             # Original: PATÍA
+      "PIENDAMO",                     # Original: PIENDAMÓ
+      "SUAREZ",                       # Original: SUÁREZ
+      "TORIBÍO",                      # Original: TORIBIO
+      "ANORI",                        # Original: ANORÍ
+      "CACERES",                      # Original: CÁCERES
+      "NECHI",                        # Original: NECHÍ
+      "TARAZA",                       # Original: TARAZÁ
+      "CONVENCION",                   # Original: CONVENCIÓN
+      "HACARI",                       # Original: HACARÍ
+      "TIBU",                         # Original: TIBÚ
+      "MURINDO",                      # Original: MURINDÓ
+      "VIGIA DEL FUERTE",             # Original: VIGÍA DEL FUERTE
+      "ACANDI",                       # Original: ACANDÍ
+      "NOVITA",                       # Original: NÓVITA
+      "SIPI",                         # Original: SIPÍ
+      "UNGUIA",                       # Original: UNGUÍA
+      "MILAN",                        # Original: MILÁN
+      "VALPARAISO",                   # Original: VALPARAÍSO
+      "MAPIRIPAN",                    # Original: MAPIRIPÁN
+      "CORDOBA",                      # Original: CÓRDOBA
+      "MARIA LA BAJA",                # Original: MARÍA LA BAJA
+      "CHALAN",                       # Original: CHALÁN
+      "TIMBIQUI",                     # Original: TIMBIQUÍ
+      "PUERTO ASIS",                  # Original: PUERTO ASÍS
+      "PUERTO GUZMAN",                # Original: PUERTO GUZMÁN
+      "AGUSTIN CODAZZI",              # Original: AGUSTÍN CODAZZI
+      "CIENAGA",                      # Original: CIÉNAGA
+      "FUNDACION",                    # Original: FUNDACIÓN
+      "SIMITI",                       # Original: SIMITÍ
+      "MONTELIBANO",                  # Original: MONTELÍBANO
+      "APARTADO",                     # Original: APARTADÓ
+      "CHIGORODO",                    # Original: CHIGORODÓ
+      "MUTATA",                       # Original: MUTATÁ
+      "NECOCLI",                      # Original: NECOCLÍ
+      
+      # Variants with additional text (parentheses)
+      "LOS ANDES (SOTOMAYOR)",        # Original: LOS ANDES
+      "BOJAYA (BELLAVISTA)",          # Original: BOJAYA
+      "BOJAYÁ (BELLAVISTA)",          # Original: BOJAYA (with accent)
+      "MAGÜÍ (PAYÁN)",                # Original: MAGÜI
+      "VALLE DEL GUAMUEZ (LA HORMIGA)", # Original: VALLE DEL GUAMUEZ
+      "VILLAGARZÓN (VILLA AMAZONICA)", # Original: VILLAGARZÓN
+      "MANAURE (BALCÓN DEL CESAR)",   # Original: MANAURE BALCÓN DEL CESAR
+      "YONDÓ (CASABE)",               # Original: YONDÓ
+      "COLOSÓ (RICAURTE)",            # Original: COLOSO
+      
+      # Variants with different prefixes/suffixes
+      "LITORAL DEL SAN JUAN",         # Original: EL LITORAL DEL SAN JUAN
+      "LITORAL DEL SAN JUAN (SANTA GENOVEVA DE D.)", # Original: EL LITORAL DEL SAN JUAN
+      "BELEN ANDAQUIES",              # Original: BELÉN DE LOS ANDAQUÍES
+      "BELÉN DE LOS ANDAQUÍES",       # Original: BELÉN DE LOS ANDAQUÍES (with accents)
+      "CARTAGENA DEL CHAIRA",         # Original: CARTAGENA DEL CHAIRÁ
+      "CARTAGENA DEL CHAIRÁ",         # Original: CARTAGENA DEL CHAIRÁ (with accent)
+      "SAN JOSE DE FRAGUA",           # Original: SAN JOSÉ DEL FRAGUA
+      "SAN JOSÉ DE LA FRAGUA",        # Original: SAN JOSÉ DEL FRAGUA
+      "SAN VICENTE DEL CAGUAN",       # Original: SAN VICENTE DEL CAGUÁN
+      "SAN VICENTE DEL CAGUÁN",       # Original: SAN VICENTE DEL CAGUÁN (with accent)
+      "SAN JOSE DEL GUAVIARE",        # Original: SAN JOSÉ DEL GUAVIARE
+      "SAN JOSÉ DEL GUAVIARE",        # Original: SAN JOSÉ DEL GUAVIARE (with accent)
+      "LA URIBE",                     # Original: URIBE
+      "EL CARMEN DE BOLIVAR",         # Original: EL CARMEN DE BOLÍVAR
+      "SAN JUAN DE NEPOMUCENO",       # Original: SAN JUAN NEPOMUCENO
+      "TOLUVIEJO",                    # Original: TOLÚ VIEJO
+      "LOPEZ",                        # Original: LÓPEZ
+      "LÓPEZ DE MICAY",               # Original: LÓPEZ
+      "OLAYA HERRERA (BOCAS DE SATINGA)", # Original: OLAYA HERRERA
+      "ROBERTO PAYAN (SAN JOSÉ)",     # Original: ROBERTO PAYÁN
+      "TUMACO",                       # Original: SAN ANDRES DE TUMACO
+      "SANTA BARBARA",                # Original: SANTA BÁRBARA
+      "PUERTO LEGUÍZAMO",             # Original: LEGUÍZAMO
+      "SAN JOSÉ DE URE",              # Original: SAN JOSE DE URE
+      "SAN PEDRO DE URABA",           # Original: SAN PEDRO DE URABA
+      
+      # Variants with both additional text and accent differences
+      "EL CARMEN DE ATRATO"           # Original: EL CARMEN
+    ),
+    PDET = 1
+  )
+)
+
+
+# Add the PDET column to the main dataset using an ifelse statement
+IDF_combined$Municipio_PDET <- ifelse(
+  IDF_combined$Municipio %in% pdet_reference$Municipio,
+  1,  # Municipality is in PDET list
+  0   # Municipality is not in PDET list
+)
+
+#Create a reference base to assign the ratings of the departments
+fiscal_data <- read_excel("IDF Indice de  Desempeño Fiscal/Anexos Desempeño Fiscal 2020_Nueva Metodología.xlsx", 
+    skip = 6)
+
+# Create simple reference table with department and codigo/rating
+department_rating_reference <- data.frame(
+  Departamento = fiscal_data$Departamento,
+  Codigo = fiscal_data$`Categoría Ley 617`) %>%
+  distinct()
+
+#add alternative spellings of department names
+department_rating_reference <- rbind(
+  department_rating_reference,
+  data.frame(
+    Departamento = c(
+      # Without accents - using same category as original
+      "ATLANTICO",   # Original: ATLÁNTICO (Category: 1)
+      "BOLIVAR",     # Original: BOLÍVAR (Category: 1)
+      "BOYACA",      # Original: BOYACÁ (Category: 1)
+      "CAQUETA",     # Original: CAQUETÁ (Category: 4)
+      "CORDOBA",     # Original: CÓRDOBA (Category: 2)
+      "CHOCO",       # Original: CHOCÓ (Category: 4)
+      "NARIÑO",      # Original: NARIÑO (Category: 1)
+      "QUINDIO",     # Original: QUINDIO (Category: 3)
+      "SAN ANDRES",  # Original: SAN ANDRÉS (Category: 3)
+      "GUAINIA",     # Original: GUAINÍA (Category: 4)
+      "VAUPES",      # Original: VAUPÉS (Category: 4)
+      
+      # With different names/formats - using same category as original
+      "BOGOTA",      # Alternative for Bogotá (Category: ESPECIAL)
+      "BOGOTÁ, D.C.", # Alternative format (Category: ESPECIAL)
+      "LA GUAJIRA",  # Alternative for GUAJIRA (Category: 4)
+      "GUAINÍA",     # Alternative spelling of GUAINIA (Category: 4)
+      "VAUPÉS",      # Alternative spelling of VAUPES (Category: 4)
+      "ATLÁNTICO",   # Alternative spelling of ATLANTICO (Category: 1)
+      "ARCHIPIÉLAGO DE SAN ANDRÉS, PROVIDENCIA Y SANTA CATALINA" # Long form of SAN ANDRÉS (Category: 3)
+    ),
+    
+    Codigo = c(
+      # Categories matching exactly with originals
+      "1",        # ATLANTICO
+      "1",        # BOLIVAR
+      "1",        # BOYACA
+      "4",        # CAQUETA
+      "2",        # CORDOBA
+      "4",        # CHOCO
+      "1",        # NARIÑO
+      "3",        # QUINDIO
+      "3",        # SAN ANDRES
+      "4",        # GUAINIA
+      "4",        # VAUPES
+      
+      # Categories for different formats
+      "ESPECIAL", # BOGOTA
+      "ESPECIAL", # BOGOTÁ, D.C.
+      "4",        # LA GUAJIRA
+      "4",        # GUAINÍA
+      "4",        # VAUPÉS
+      "1",        # ATLÁNTICO
+      "3"         # ARCHIPIÉLAGO DE SAN ANDRÉS...
+    )
+  )
+)
+# Remove any duplicate rows
+department_rating_reference <- unique(department_rating_reference)
+
+# add the department rating to the main dataset
+IDF_combined <- IDF_combined %>%
+  left_join(department_rating_reference %>% select(Departamento, Codigo),
+            by = "Departamento")
+
+#not sure why still getting some NA results, so manually updating these
+IDF_combined <- IDF_combined %>%
+  mutate(Codigo = case_when(
+    is.na(Codigo) & Departamento == "BOLÍVAR" ~ "1",
+    is.na(Codigo) & Departamento == "CHOCÓ" ~ "4",
+    is.na(Codigo) & Departamento == "CAQUETÁ" ~ "4",
+    TRUE ~ Codigo
+  ))
+
+# add the department rating to the main dataset (again)
+IDF_combined <- IDF_combined %>%
+  left_join(department_rating_reference %>% select(Departamento, Codigo),
+            by = "Departamento")
+
+# Save the updated dataset
+write.csv(IDF_combined, "IDF_combined_with_categories.csv", row.names = FALSE)
 
 ```
 
@@ -217,38 +413,75 @@ You can also embed plots, for example:
 
 ```{r pressure, echo=FALSE}
 # 2. Visualization: Scatterplot of IDF score by Category, colored by Department
-# For better visualization, we'll select the top departments by municipality count
-top_departments <- IDF_combined %>%
-  distinct(Municipio, Departamento) %>%
-  count(Departamento, sort = TRUE) %>%
-  head(10) %>%
-  pull(Departamento)
 
-# Create the scatterplot
-plot_data <- IDF_combined %>%
-  filter(Departamento %in% top_departments) %>%
-  # Use the most recent year for cleaner visualization
-  filter(Year == max(Year))
+IDF_combined %>%
+  group_by(Municipio_PDET) %>%
+  summarise(
+    Promedio_IDF = mean(`Nuevo IDF`, na.rm = TRUE),
+    Mediana_IDF = median(`Nuevo IDF`, na.rm = TRUE),
+    SD_IDF = sd(`Nuevo IDF`, na.rm = TRUE),
+    N = n()
+  )
 
-# Create the plot
-idf_scatter <- ggplot(plot_data, aes(x = `Nuevo IDF`, y = Categorías, color = Departamento)) +
-  geom_jitter(alpha = 0.7, width = 0, height = 0.2) +
+t.test(`Nuevo IDF` ~ Municipio_PDET, data = IDF_combined)
+
+library(ggplot2)
+
+ggplot(IDF_combined, aes(x = `Nuevo IDF`, fill = as.factor(Municipio_PDET))) +
+  geom_density(alpha = 0.4) +
+  labs(title = "Distribución del IDF por condición PDET", 
+       x = "`Nuevo IDF`", 
+       fill = "Municipio PDET") +
+  theme_minimal()
+
+IDF_combined <- IDF_combined %>%
+  mutate(grupo_comparacion = case_when(
+    Municipio_PDET == 1 & Categorías == "6" ~ "PDET y Cat 6",
+    Municipio_PDET == 1 & Categorías != "6" ~ "Solo PDET",
+    Municipio_PDET == 0 & Categorías == "6" ~ "Solo Cat 6",
+    TRUE ~ NA_character_
+  ))
+
+# Calcular estadísticas por grupo
+IDF_combined %>%
+  filter(!is.na(grupo_comparacion)) %>%
+  group_by(grupo_comparacion) %>%
+  summarise(
+    Promedio_IDF = mean(`Nuevo IDF`, na.rm = TRUE),
+    Mediana_IDF = median(`Nuevo IDF`, na.rm = TRUE),
+    SD_IDF = sd(`Nuevo IDF`, na.rm = TRUE),
+    N = n()
+  )
+
+library(dplyr)
+
+IDF_combined <- IDF_combined %>%
+  mutate(grupo_ts = case_when(
+    Municipio_PDET == 1 & Categorías == "6" ~ "PDET Cat 6",
+    Municipio_PDET == 0 & Categorías == "6" ~ "No PDET Cat 6",
+    TRUE ~ NA_character_
+  )) %>%
+  filter(!is.na(grupo_ts))
+
+df_ts <- IDF_combined %>%
+  group_by(Year, grupo_ts) %>%
+  summarise(Promedio_IDF = mean(`Nuevo IDF`, na.rm = TRUE), .groups = "drop")
+
+library(ggplot2)
+
+ggplot(df_ts, aes(x = Year, y = Promedio_IDF, color = grupo_ts)) +
+  geom_line(linewidth = 1.2) +     # <- Aquí el cambio
+  geom_point(size = 2) +
   labs(
-    title = "IDF Scores by Municipality Category",
-    subtitle = paste("Top", length(top_departments), "Departments by Municipality Count"),
-    x = "Nuevo IDF Score",
-    y = "Municipality Category",
-    color = "Department"
+    title = "Evolución del Nuevo IDF (2020–2023)",
+    subtitle = "Comparación entre municipios PDET categoría 6 y no PDET categoría 6",
+    x = "Año",
+    y = "Promedio del Nuevo IDF",
+    color = "Grupo"
   ) +
-  theme_minimal() +
-  theme(
-    legend.position = "bottom",
-    legend.text = element_text(size = 8)
-  ) +
-  guides(color = guide_legend(nrow = 2))
+  theme_minimal()
 
-# Display the plot
-print(idf_scatter)
+
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
