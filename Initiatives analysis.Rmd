@@ -16,7 +16,8 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("dplyr")
 #install.packages ("tidyr")
 #install.packages ("stats")
-install.packages("geoBVE")
+#install.packages("geoBVE")
+#install.packages("tmap")
 
 library("tidyverse")
 library("here")
@@ -463,14 +464,27 @@ IDF_combined <- IDF_combined %>%
   )) %>%
   filter(!is.na(grupo_ts))
 
+# Load required libraries upfront
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+# Create the grupo_ts variable
+IDF_combined <- IDF_combined %>%
+  mutate(grupo_ts = case_when(
+    Municipio_PDET == 1 & Categorías == "6" ~ "PDET Cat 6",
+    Municipio_PDET == 0 & Categorías == "6" ~ "No PDET Cat 6",
+    TRUE ~ NA_character_
+  )) %>%
+  filter(!is.na(grupo_ts))
+
+# Plot 1: Evolution of Nuevo IDF over time
 df_ts <- IDF_combined %>%
   group_by(Year, grupo_ts) %>%
   summarise(Promedio_IDF = mean(`Nuevo IDF`, na.rm = TRUE), .groups = "drop")
 
-library(ggplot2)
-
-ggplot(df_ts, aes(x = Year, y = Promedio_IDF, color = grupo_ts)) +
-  geom_line(linewidth = 1.2) +     # <- Aquí el cambio
+plot_idf_evolucion <- ggplot(df_ts, aes(x = Year, y = Promedio_IDF, color = grupo_ts)) +
+  geom_line(linewidth = 1.2) +
   geom_point(size = 2) +
   labs(
     title = "Evolución del Nuevo IDF (2020–2023)",
@@ -481,6 +495,98 @@ ggplot(df_ts, aes(x = Year, y = Promedio_IDF, color = grupo_ts)) +
   ) +
   theme_minimal()
 
+# Print the first plot
+print(plot_idf_evolucion)
+
+# Plot 2: IDF and Capacidad de Ejecución de Inversión
+df_long_ejecucion <- IDF_combined %>%
+  select(Year, grupo_ts, `Nuevo IDF`, `Capacidad de Ejecución de Inversión`) %>%
+  pivot_longer(
+    cols = c(`Nuevo IDF`, `Capacidad de Ejecución de Inversión`),
+    names_to = "Indicador",
+    values_to = "Valor"
+  )
+
+df_promedios_ejecucion <- df_long_ejecucion %>%
+  group_by(Year, grupo_ts, Indicador) %>%
+  summarise(Promedio = mean(Valor, na.rm = TRUE), .groups = "drop")
+
+plot_ejecucion <- ggplot(df_promedios_ejecucion, aes(x = Year, y = Promedio, color = grupo_ts)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2) +
+  facet_wrap(~Indicador, scales = "free_y") +
+  labs(
+    title = "Evolución comparada: IDF y Capacidad de Ejecución de Inversión",
+    subtitle = "Municipios PDET categoría 6 vs No PDET categoría 6 (2020–2023)",
+    x = "Año",
+    y = "Promedio",
+    color = "Grupo"
+  ) +
+  theme_minimal()
+
+# Print the second plot
+print(plot_ejecucion)
+
+# Plot 3: IDF and Capacidad de programación y recaudo de ingresos
+df_long_recaudo <- IDF_combined %>%
+  select(Year, grupo_ts, `Nuevo IDF`, `Capacidad de programación y recaudo de ingresos`) %>%
+  pivot_longer(
+    cols = c(`Nuevo IDF`, `Capacidad de programación y recaudo de ingresos`),
+    names_to = "Indicador",
+    values_to = "Valor"
+  )
+
+df_promedios_recaudo <- df_long_recaudo %>%
+  group_by(Year, grupo_ts, Indicador) %>%
+  summarise(Promedio = mean(Valor, na.rm = TRUE), .groups = "drop")
+
+plot_recaudo <- ggplot(df_promedios_recaudo, aes(x = Year, y = Promedio, color = grupo_ts)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2) +
+  facet_wrap(~Indicador, scales = "free_y") +
+  labs(
+    title = "Evolución comparada: IDF y Capacidad de Recaudo de Ingresos",
+    subtitle = "Municipios PDET categoría 6 vs No PDET categoría 6 (2020–2023)",
+    x = "Año",
+    y = "Promedio",
+    color = "Grupo"
+  ) +
+  theme_minimal()
+
+# Print the third plot
+print(plot_recaudo)
+
+library(sf)
+library(dplyr)
+library(tmap)
+library(geobr)
+
+# Filtrar año 2023 y seleccionar solo columnas necesarias
+idf_2023 <- IDF_combined %>%
+  filter(Year == 2023) %>%
+  select(Código, `Nuevo IDF`, Municipio_PDET)
+
+# Unir el shapefile con los datos
+mapa_datos <- left_join(mapa_mpios, IDF_2023, by = c("Codigo" = "Código"))
+
+# Crear variable categórica para PDET / No PDET
+mapa_datos <- mapa_datos %>%
+  mutate(grupo_paz = ifelse(Municipio_PDET == 1, "PDET", "No PDET"))
+
+# Estilo mapa tmap (modo visual interactivo si usas RStudio)
+tmap_mode("plot")
+
+# Mapa comparativo
+tm_shape(mapa_datos) +
+  tm_polygons("Nuevo IDF",
+              palette = "Blues",
+              title = "Índice de Desarrollo Fiscal (IDF)",
+              style = "quantile") +
+  tm_facets(by = "grupo_paz", ncol = 2) +
+  tm_layout(
+    main.title = "Comparación del IDF 2023: Municipios PDET vs No PDET",
+    legend.outside = TRUE
+  )
 
 ```
 
