@@ -654,7 +654,7 @@ Table 3 presents the statistical comparison of key fiscal indicators between PDE
 An important aspect of fiscal performance is the extent to which municipalities depend on transfers from the national government rather than generating their own resources.
 
 ```{r transfer_dependency, fig.cap="Dependency on National Transfers by group (2020-2023)."}
-# Let's directly examine the IDF_combined dataset structure
+# To examine the IDF_combined dataset structure
 str_check <- IDF_combined %>%
   filter(Year == 2020, Municipio_PDET == 1, Categorías == "6") %>%
   select('Year', 'Municipio_PDET', 'Categorías', 'Dependencia de las Transferencias', 'grupo_ts') %>%
@@ -670,7 +670,7 @@ grupo_ts_check <- IDF_combined %>%
 
 print(grupo_ts_check)
 
-# Try a most basic approach possible to create the dependency plot
+# Creating the dependency plot
 basic_dependency <- IDF_combined %>%
   select('Year', 'Municipio_PDET', 'Categorías', 'Dependencia de las Transferencias') %>%
   mutate(
@@ -687,7 +687,7 @@ basic_dependency <- IDF_combined %>%
   )
 print(basic_dependency)
 
-# Plot with minimal assumptions
+# Plot with the assumptions
 ggplot(basic_dependency, aes(x = as.factor(Year), y = Mean_Dependency, group = as.factor(Municipio_PDET), color = as.factor(Municipio_PDET))) +
   geom_point(size = 3) +
   geom_line(linewidth = 1.2) +
