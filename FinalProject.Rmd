@@ -29,6 +29,7 @@ knitr::opts_chunk$set(
 
 # Load required libraries
 library(tidyverse)
+library (tidytext)
 library(here)
 library(lubridate)
 library(cowplot)
@@ -43,7 +44,9 @@ library(kableExtra)
 
 
 # Set working directory - You may need to adjust this path
-setwd("/Users/christopherstarr/StarrRodriguez_ENV872_EDA_FinalProject")
+#setwd("/Users/christopherstarr/StarrRodriguez_ENV872_EDA_FinalProject")
+setwd("/home/guest/StarrRodriguez_ENV872_EDA_FinalProject")
+
 ```
 
 # Rationale and Research Questions
@@ -288,6 +291,7 @@ department_rating_reference <- rbind(
   )
 )
 
+
 # Remove any duplicate rows
 department_rating_reference <- unique(department_rating_reference)
 
@@ -342,7 +346,7 @@ dataset_summary <- data.frame(
 
 # Apply formatting to make the table more compact but still readable
 kable(dataset_summary, 
-      caption = "Table 1: Structure of the Colombia Fiscal Performance Dataset",
+      caption = "Structure of the Colombia Fiscal Performance Dataset",
       col.names = c("Variable", "Description", "Data Type")) %>%
   kable_styling(bootstrap_options = c("striped", "condensed"), 
                 font_size = 9,
@@ -358,7 +362,7 @@ Before conducting in-depth statistical analyses, we first explored the general c
 
 ## Dataset Overview
 
-```{r exploratory, fig.cap="Figure 1: Number of unique municipalities in the dataset by year."}
+```{r exploratory, fig.cap="Number of unique municipalities in the dataset by year."}
 # Count total unique municipalities
 total_unique_municipios <- IDF_combined %>%
   distinct(Municipio) %>%
@@ -376,37 +380,69 @@ codigos_per_municipio <- IDF_combined %>%
   ) %>%
   arrange(Departamento, Municipio)
 
-# 3. Count Códigos per Departamento
+# Count Códigos per Departamento
 codigos_per_departamento <- table(IDF_combined$Departamento)
 sorted_departamentos <- sort(codigos_per_departamento, decreasing = TRUE)
 
 # Count initiatives by department
 initiative_counts <- IDF_combined %>%
-  group_by(Departamento) %>%
+  group_by(Departamento,Year) %>%
   summarise(Count = n()) %>%
   arrange(desc(Count))
 
-# Get top 10 departments
-top_dept_initiatives <- initiative_counts %>%
-  head(10)
 
-# Create the bar chart
-ggplot(top_dept_initiatives, aes(x = reorder(Departamento, -Count), y = Count)) +
+# Get the count of municipalities by departments PER YEAR
+top_dept_per_year <- initiative_counts %>%
+  group_by(Year) %>%
+  slice_max(order_by = Count, n = 30, with_ties = FALSE) %>%  # top 10 por año
+  ungroup()
+
+# Graph by ordering within each year smallest to largest
+ggplot(top_dept_per_year, aes(x = reorder_within(Departamento, Count, Year), y = Count)) +
   geom_bar(stat = "identity", fill = "steelblue") +
-  geom_text(aes(label = Count), vjust = -0.5, size = 3) +
-  labs(title = "Top 10 Departments by Number of Initiatives",
-       x = "Department", y = "Number of Initiatives") +
+  geom_text(aes(label = Count), vjust = -0.5, size = 1.5) +
+  facet_wrap(~ Year, scales = "free_x") +
+  scale_x_reordered() + 
+  scale_y_continuous(limits = c(0, 140))+
+  labs(title = "Departments by Number of Municipalities Each Year",
+       x = "Department", y = "Number of Municipalities") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 6.5))
+
+# Building a table to figure out where have one extra municipality and understand where the naming inconsistencies are coming up
+
+kable(
+  IDF_combined %>%
+    # Count distinct municipalities by department and year
+    count(Departamento, Year, name = "Municipalities") %>%
+    # Reshape to have years as columns
+    pivot_wider(
+      names_from = Year,
+      values_from = Municipalities
+    ) %>%
+    # Sort alphabetically by department
+    arrange(Departamento)
+  ,
+  caption = "Number of Municipalities by Department and Year"
+) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 ```
 
-As shown in Figure 1, our dataset includes all 1,102 municipalities in Colombia. The largest number of municipalities are found in Antioquia, Boyacá, and Cundinamarca departments. This geographic distribution is important to consider when analyzing fiscal performance, as regional factors can influence local government capacities.
+As shown in Figure 1, our dataset includes all 1,102 municipalities in Colombia by year. The largest number of municipalities are found in Antioquia, Boyacá, and Cundinamarca departments. This geographic distribution is important to consider when analyzing fiscal performance, as regional factors can influence local government capacities. We are also building the table showing municipalities by department across the four years to demonstrate some of the naming inconsistencies across time, which we are able to avoid tripping up on later in the analysis. 
 
 ## PDET vs Non-PDET Comparison
 
+#PDET Overview
+
+PDETs are a planning and management instrument for articulating the state's plans and programs within the Comprehensive Rural 	Reform (RRI) framework, defined in the first point of the Peace Agreement signed between the National Government and the FARC-EP in 2016. These programs aim to transform regions most affected by armed conflict, government neglect, and extreme poverty. They aim to guarantee peace and social inclusion through a participatory, differentiated, and gender-sensitive approach (Colombia Peace Agreement, 2016). The programs focus on three main areas: 
+I.	The structural transformation of rural areas,  
+II.	Creating an equitable relationship between urban and rural regions, and
+III.	The economic and social reactivation and institutional strengthening of prioritized areas (Decree Law 893 of 2017). 
+
+
 A key focus of our analysis is comparing fiscal performance between PDET and non-PDET municipalities.
 
-```{r pdet_comparison, fig.cap="Figure 2: Comparison of IDF scores between PDET and non-PDET municipalities."}
+```{r pdet_comparison, fig.cap="Comparison of IDF scores between PDET and non-PDET municipalities."}
 # Basic statistics comparing PDET vs non-PDET municipalities
 pdet_stats <- IDF_combined %>%
   group_by(Municipio_PDET) %>%
@@ -421,7 +457,7 @@ pdet_stats <- IDF_combined %>%
 t_test_result <- t.test(`Nuevo IDF` ~ Municipio_PDET, data = IDF_combined)
 ```
 
-```{r pdet_density, fig.cap="Figure 3: Distribution of IDF scores by PDET status."}
+```{r pdet_density, fig.cap="Distribution of IDF scores by PDET status."}
 # Density plot comparing IDF distributions for PDET vs non-PDET municipalities
 ggplot(IDF_combined, aes(x = `Nuevo IDF`, fill = as.factor(Municipio_PDET))) +
   geom_density(alpha = 0.4) +
@@ -432,13 +468,13 @@ ggplot(IDF_combined, aes(x = `Nuevo IDF`, fill = as.factor(Municipio_PDET))) +
   theme_minimal()
 ```
 
-Figure 3 shows that PDET municipalities generally have lower fiscal performance scores compared to non-PDET municipalities. The t-test results confirm this observation, with a statistically significant difference between the two groups (t = 13.5, df = 876.6, p < 0.0001). PDET municipalities have a mean IDF score of 59.7, compared to 65.2 for non-PDET municipalities.
+Figure 2 shows that PDET municipalities generally have lower fiscal performance scores compared to non-PDET municipalities. The t-test results confirm this observation, with a statistically significant difference between the two groups (t = 13.5, df = 876.6, p < 0.0001). PDET municipalities have a mean IDF score of 59.7, compared to 65.2 for non-PDET municipalities. In other words, the differences demonstrated by PDET vs non-PDET are persistent across measurements even if they are small.
 
 ## Creating Comparison Groups
 
 To better understand the effect of PDET program on fiscal performance, we created comparison groups that account for both PDET status and municipality category.
 
-```{r comparison_groups, fig.cap="Figure 4: Creation of comparison groups for analysis."}
+```{r comparison_groups, fig.cap="Creation of comparison groups for analysis."}
 # Create comparison groups
 IDF_combined <- IDF_combined %>%
   mutate(grupo_comparacion = case_when(
@@ -478,7 +514,7 @@ For subsequent analyses, we filter our dataset to compare "PDET Cat 6" and "No P
 
 To address our first research question, we analyzed how fiscal performance has evolved over time for both PDET and non-PDET municipalities.
 
-```{r time_series, fig.cap="Figure 5: Evolution of Fiscal Performance Index (2020-2023)."}
+```{r time_series, fig.cap="Evolution of Fiscal Performance Index (2020-2023)."}
 # Plot 1: Evolution of Nuevo IDF over time
 df_ts <- IDF_combined %>%
   group_by(Year, grupo_ts) %>%
@@ -500,19 +536,19 @@ plot_idf_evolucion <- ggplot(df_ts, aes(x = Year, y = Promedio_IDF, color = grup
 print(plot_idf_evolucion)
 ```
 
-Figure 5 shows the evolution of the Fiscal Performance Index (IDF) for PDET and non-PDET municipalities in Category 6 from 2020 to 2023. The graph reveals several important patterns:
+Figure 3 shows the evolution of the Fiscal Performance Index (IDF) for PDET and non-PDET municipalities in Category 6 from 2020 to 2023. The graph reveals several important patterns:
 
 1. PDET municipalities consistently have lower IDF scores than non-PDET municipalities throughout the entire period.
 2. Both groups experienced a slight decline in performance during 2021-2022, followed by a recovery in 2023.
 3. The gap between the two groups has remained relatively stable at approximately 5 points, suggesting that the PDET program has not yet led to significant convergence in fiscal performance.
 
-Statistical analysis confirms that the difference between the two groups is significant (p < 0.001) across all years, indicating persistent fiscal challenges in post-conflict regions despite targeted interventions.
+Statistical analysis confirms that the difference between the two groups is significant (p < 0.001) across all years, indicating persistent fiscal challenges in post-conflict regions despite targeted interventions. Further analysis will be needed to better understand the sharp decline of the fiscal performance of the PDET and Non-PDET municipalities from 2020 to 2022. 
 
 ## Investment Execution Capacity
 
 One of the key components of fiscal performance is the ability to execute investments effectively. We examined this specific indicator to identify potential areas for improvement.
 
-```{r investment_execution, fig.cap="Figure 6: Comparison of Investment Execution Capacity between PDET and non-PDET municipalities."}
+```{r investment_execution, fig.cap="Comparison of Investment Execution Capacity between PDET and non-PDET municipalities."}
 # Plot 2: IDF and Capacidad de Ejecución de Inversión
 df_long_ejecucion <- IDF_combined %>%
   dplyr::select(Year, grupo_ts, `Nuevo IDF`, `Capacidad de Ejecución de Inversión`) %>%
@@ -543,13 +579,13 @@ plot_ejecucion <- ggplot(df_promedios_ejecucion, aes(x = Year, y = Promedio, col
 print(plot_ejecucion)
 ```
 
-Figure 6 compares the overall IDF with the Investment Execution Capacity component for both groups. The Investment Execution Capacity measures a municipality's ability to effectively implement budgeted investments. PDET municipalities show consistently lower scores in this dimension compared to non-PDET municipalities, with differences of 7-9 percentage points. This suggests that one of the main challenges for post-conflict regions is the effective execution of investment projects, which could be due to weaker institutional capacity or implementation challenges in conflict-affected areas.
+Figure 4 compares the overall IDF(Nuevo IDF) with the Investment Execution Capacity (Capacidad de Ejecución de Inversión) component for both groups. The Investment Execution Capacity measures a municipality's ability to effectively implement budgeted investments. PDET municipalities show consistently lower scores in this dimension compared to non-PDET municipalities, with differences of 7-9 percentage points. This suggests that one of the main challenges for post-conflict regions is the effective execution of investment projects, which could be due to weaker institutional capacity or implementation challenges in conflict-affected areas.
 
 ## Revenue Collection Capacity
 
 Another critical component of fiscal performance is the ability to plan and collect revenue effectively.
 
-```{r revenue_collection, fig.cap="Figure 7: Comparison of Revenue Collection Capacity between PDET and non-PDET municipalities."}
+```{r revenue_collection, fig.cap="Comparison of Revenue Collection Capacity between PDET and non-PDET municipalities."}
 # Plot 3: IDF and Capacidad de programación y recaudo de ingresos
 df_long_recaudo <- IDF_combined %>%
   dplyr::select(Year, grupo_ts, `Nuevo IDF`, `Capacidad de programación y recaudo de ingresos`) %>%
@@ -559,14 +595,22 @@ df_long_recaudo <- IDF_combined %>%
     values_to = "Valor"
   )
 
+# Create shorter names for the indicators
+df_long_recaudo <- df_long_recaudo %>%
+  mutate(Indicador_short = case_when(
+    Indicador == "Nuevo IDF" ~ "Fiscal Performance Index",
+    Indicador == "Capacidad de programación y recaudo de ingresos" ~ "Revenue Collection Capacity",
+    TRUE ~ Indicador
+  ))
+
 df_promedios_recaudo <- df_long_recaudo %>%
-  group_by(Year, grupo_ts, Indicador) %>%
+  group_by(Year, grupo_ts, Indicador_short) %>%
   summarise(Promedio = mean(Valor, na.rm = TRUE), .groups = "drop")
 
 plot_recaudo <- ggplot(df_promedios_recaudo, aes(x = Year, y = Promedio, color = grupo_ts)) +
   geom_line(linewidth = 1.2) +
   geom_point(size = 2) +
-  facet_wrap(~Indicador, scales = "free_y") +
+  facet_wrap(~Indicador_short, scales = "free_y") +
   labs(
     title = "Comparative Evolution: IDF and Revenue Collection Capacity",
     subtitle = "PDET Category 6 vs Non-PDET Category 6 municipalities (2020–2023)",
@@ -580,13 +624,13 @@ plot_recaudo <- ggplot(df_promedios_recaudo, aes(x = Year, y = Promedio, color =
 print(plot_recaudo)
 ```
 
-Figure 7 compares the overall IDF with the Revenue Collection Capacity component. This indicator measures a municipality's ability to plan and execute its own revenue collection. Similar to investment execution, PDET municipalities show consistently lower performance in revenue collection compared to non-PDET municipalities. The gap of approximately 8-9 percentage points suggests significant challenges in revenue planning and administration in post-conflict regions. This could reflect weaker institutional capacity, smaller tax bases, or difficulties in implementing effective tax collection systems in areas previously affected by conflict.
+Figure 5 compares the overall IDF with the Revenue Collection Capacity component. This indicator measures a municipality's ability to plan and execute its own revenue collection. Similar to investment execution, PDET municipalities show consistently lower performance in revenue collection compared to non-PDET municipalities. The gap of approximately 8-9 percentage points suggests significant challenges in revenue planning and administration in post-conflict regions. This could reflect weaker institutional capacity, smaller tax bases, or difficulties in implementing effective tax collection systems in areas previously affected by conflict.
 
 ## Statistical Testing of Differences
 
 To determine whether the observed differences between PDET and non-PDET municipalities are statistically significant, we conducted formal statistical tests.
 
-```{r statistical_tests, fig.cap="Figure 8: Statistical comparison of fiscal indicators between groups."}
+```{r statistical_tests, fig.cap="Statistical comparison of fiscal indicators between groups."}
 # Create a statistical comparison table
 component_comparison <- data.frame(
   Component = c("Investment Execution Capacity", "Revenue Collection Capacity", 
@@ -598,41 +642,66 @@ component_comparison <- data.frame(
 )
 
 kable(component_comparison, 
-      caption = "Table 2: Comparison of Key Fiscal Indicators Between PDET and Non-PDET Category 6 Municipalities (2023)",
+      caption = "Comparison of Key Fiscal Indicators Between PDET and Non-PDET Category 6 Municipalities (2023)",
       col.names = c("Component", "PDET Mean", "Non-PDET Mean", "Difference", "P-Value")) %>%
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
 ```
 
-Table 2 presents the statistical comparison of key fiscal indicators between PDET and non-PDET municipalities for the most recent year (2023). All differences are statistically significant (p < 0.0001), confirming that the fiscal performance gaps observed in our visualizations represent genuine disparities rather than random variation. The largest gaps are in Investment Execution Capacity and Revenue Collection Capacity, suggesting that these are the areas where PDET municipalities face the greatest challenges.
+Table 3 presents the statistical comparison of key fiscal indicators between PDET and non-PDET municipalities for the most recent year (2023). All differences are statistically significant (p < 0.0001), confirming that the fiscal performance gaps observed in our visualizations represent genuine disparities rather than random variation. The largest gaps are in Investment Execution Capacity and Revenue Collection Capacity, suggesting that these are the areas where PDET municipalities face the greatest challenges.
 
 ## Dependency on Transfers
 
 An important aspect of fiscal performance is the extent to which municipalities depend on transfers from the national government rather than generating their own resources.
 
-```{r transfer_dependency, fig.cap="Figure 9: Dependency on National Transfers by group (2020-2023)."}
-# Create comparison of transfer dependency
-dependency_data <- IDF_combined %>%
-  group_by(Year, grupo_ts) %>%
+```{r transfer_dependency, fig.cap="Dependency on National Transfers by group (2020-2023)."}
+# Let's directly examine the IDF_combined dataset structure
+str_check <- IDF_combined %>%
+  filter(Year == 2020, Municipio_PDET == 1, Categorías == "6") %>%
+  select('Year', 'Municipio_PDET', 'Categorías', 'Dependencia de las Transferencias', 'grupo_ts') %>%
+  head(5)
+
+print(str_check)
+
+# Check if grupo_ts is filtering out 2020 data
+grupo_ts_check <- IDF_combined %>%
+  filter(Year == 2020) %>%
+  group_by(grupo_ts) %>%
+  summarise(count = n())
+
+print(grupo_ts_check)
+
+# Try a most basic approach possible to create the dependency plot
+basic_dependency <- IDF_combined %>%
+  select('Year', 'Municipio_PDET', 'Categorías', 'Dependencia de las Transferencias') %>%
+  mutate(
+    Year = as.numeric(Year),
+    Municipio_PDET = as.numeric(Municipio_PDET),
+    Categorías = as.character(Categorías),
+    Dependency = as.numeric(`Dependencia de las Transferencias`) ) %>%
+  filter(Categorías == "6", !is.na(Dependency)) %>%
+  group_by(Year, Municipio_PDET) %>%
   summarise(
-    Mean_Dependency = mean(`Dependencia de las Transferencias`, na.rm = TRUE),
+    Mean_Dependency = mean(Dependency, na.rm = TRUE),
+    Count = n(),
     .groups = "drop"
   )
+print(basic_dependency)
 
-ggplot(dependency_data, aes(x = Year, y = Mean_Dependency, color = grupo_ts, group = grupo_ts)) +
-  geom_line(linewidth = 1.2) +
+# Plot with minimal assumptions
+ggplot(basic_dependency, aes(x = as.factor(Year), y = Mean_Dependency, group = as.factor(Municipio_PDET), color = as.factor(Municipio_PDET))) +
   geom_point(size = 3) +
+  geom_line(linewidth = 1.2) +
   labs(
-    title = "Dependency on National Transfers (2020-2023)",
-    subtitle = "PDET Category 6 vs Non-PDET Category 6 Municipalities",
+    title = "Dependency on National Transfers (Basic Approach)",
     x = "Year",
     y = "Average Dependency on Transfers (%)",
-    color = "Group"
+    color = "PDET Status"
   ) +
-  theme_minimal() +
-  scale_y_continuous(limits = c(60, 80))
+  scale_color_discrete(labels = c("Non-PDET", "PDET")) +
+  theme_minimal()
 ```
 
-Figure 9 shows that PDET municipalities are significantly more dependent on national government transfers than non-PDET municipalities. This dependency has slightly increased over the study period, indicating that PDET municipalities continue to face challenges in generating their own resources. The high dependency on transfers makes these municipalities more vulnerable to changes in national fiscal policy and less financially autonomous.
+Figure 6 shows that PDET municipalities are significantly more dependent on national government transfers than non-PDET municipalities. This dependency has slightly increased over the study period, indicating that PDET municipalities continue to face challenges in generating their own resources. The high dependency on transfers makes these municipalities more vulnerable to changes in national fiscal policy and less financially autonomous.
 
 # Summary and Conclusions
 
